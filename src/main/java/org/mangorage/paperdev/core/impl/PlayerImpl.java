@@ -3,7 +3,7 @@ package org.mangorage.paperdev.core.impl;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.entity.Player;
 import org.mangorage.paperdev.core.attachment.Attachment;
-import org.mangorage.paperdev.core.interfaces.IPlayer;
+import org.mangorage.paperdev.core.interfaces.entity.IPlayer;
 
 public class PlayerImpl extends Attachment<Player> implements IPlayer {
     private int ticks = 0;

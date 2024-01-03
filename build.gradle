@@ -16,7 +16,6 @@ buildscript {
 
     dependencies {
         classpath 'gradle.plugin.com.github.johnrengelman:shadow:7.1.2'
-        classpath 'io.github.realmangorage:mangogradleutils:1.0.0'
     }
 }
 
@@ -26,7 +25,6 @@ plugins {
 }
 
 apply plugin: 'java'
-apply plugin: 'mangogradleutils'
 
 group = 'org.mangorage'
 version = '1.0.0'
@@ -48,9 +46,6 @@ dependencies {
 
     compileOnly "io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT"
     paperweight.paperDevBundle("1.20.4-R0.1-SNAPSHOT")
-    coreMain('io.papermc.paper:paper-server:userdev-1.20.4-R0.1-SNAPSHOT')
-    core('io.papermc.paper:paper-server:userdev-1.20.4-R0.1-SNAPSHOT')
-    core(sourceSets.main.output)
 }
 
 def targetJavaVersion = 17
