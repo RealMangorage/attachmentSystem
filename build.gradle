@@ -1,0 +1,88 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+        maven {
+            url = uri("https://plugins.gradle.org/m2/")
+        }
+        maven {
+            url = 'https://s01.oss.sonatype.org/content/repositories/releases/'
+        }
+        maven {
+            url = 'https://repo.mattmalec.com/repository/releases'
+        }
+    }
+
+    dependencies {
+        classpath 'gradle.plugin.com.github.johnrengelman:shadow:7.1.2'
+        classpath 'io.github.realmangorage:mangogradleutils:1.0.0'
+    }
+}
+
+plugins {
+    id("io.papermc.paperweight.userdev") version "1.5.10" // Check for new versions at https://plugins.gradle.org/plugin/io.papermc.paperweight.userdev
+    id("xyz.jpenilla.run-paper") version "2.2.2"
+}
+
+apply plugin: 'java'
+apply plugin: 'mangogradleutils'
+
+group = 'org.mangorage'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = "papermc-repo"
+        url = "https://repo.papermc.io/repository/maven-public/"
+    }
+    maven {
+        name = "sonatype"
+        url = "https://oss.sonatype.org/content/groups/public/"
+    }
+}
+
+dependencies {
+    compileOnly 'com.lmax:disruptor:3.4.2'
+
+    compileOnly "io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT"
+    paperweight.paperDevBundle("1.20.4-R0.1-SNAPSHOT")
+    coreMain('io.papermc.paper:paper-server:userdev-1.20.4-R0.1-SNAPSHOT')
+    core('io.papermc.paper:paper-server:userdev-1.20.4-R0.1-SNAPSHOT')
+    core(sourceSets.main.output)
+}
+
+def targetJavaVersion = 17
+java {
+    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
+    if (JavaVersion.current() < javaVersion) {
+        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
+        options.release = targetJavaVersion
+    }
+}
+
+processResources {
+    def props = [version: version]
+    inputs.properties props
+    filteringCharset 'UTF-8'
+    filesMatching('plugin.yml') {
+        expand props
+    }
+}
+
+tasks {
+    runServer {
+        // Configure the Minecraft version for our task.
+        // This is the only required configuration besides applying the plugin.
+        // Your plugin's jar (or shadowJar if present) will be used automatically.
+        minecraftVersion("1.20.4")
+    }
+}

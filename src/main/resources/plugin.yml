@@ -1,0 +1,4 @@
+name: paperDev
+version: '${version}'
+main: org.mangorage.paperdev.PaperDev
+api-version: '1.20'
