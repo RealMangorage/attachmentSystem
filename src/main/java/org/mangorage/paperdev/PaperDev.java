@@ -11,7 +11,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mangorage.paperdev.core.attachment.AttachmentSystem;
-import org.mangorage.paperdev.core.attachment.Attachments;
 import org.mangorage.paperdev.core.attachment.DetachReason;
 import org.mangorage.paperdev.core.impl.CreeperImpl;
 import org.mangorage.paperdev.core.impl.PlayerImpl;
@@ -29,12 +28,12 @@ public final class PaperDev extends JavaPlugin implements Listener {
         };
     }
 
-    private final AttachmentSystem attachmentSystem = new AttachmentSystem();
+    private final AttachmentSystem attachmentSystem = AttachmentSystem.getInstance();
 
     @Override
     public void onEnable() {
         Bukkit.getPluginManager().registerEvents(this, this);
-        Bukkit.getScheduler().runTaskTimer(this, attachmentSystem::tickChildren, 0, 1);
+        Bukkit.getScheduler().runTaskTimer(this, attachmentSystem::tick, 0, 1);
     }
 
     @Override
@@ -43,27 +42,26 @@ public final class PaperDev extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        attachmentSystem.getAttachmentManager(Attachments.PLAYER).attach(event.getPlayer(), PlayerImpl::new);
+        attachmentSystem.attach(new PlayerImpl(this, event.getPlayer()));
     }
 
     @EventHandler
     public void onLeave(PlayerQuitEvent event) {
-        attachmentSystem.getAttachmentManager(Attachments.PLAYER).detachWrapped(event.getPlayer(), DetachReason.REMOVED);
+        attachmentSystem.detachAll(event.getPlayer(), DetachReason.REMOVED);
     }
 
     @EventHandler
     public void onEntityJoin(EntityAddToWorldEvent event) {
-        if (event.getEntity() instanceof Creeper creeper)
-            attachmentSystem.getAttachmentManager(Attachments.ENTITIES).attach(creeper, a -> new CreeperImpl(creeper));
+        if (event.getEntity() instanceof Creeper creeper) attachmentSystem.attach(() -> new CreeperImpl(this, creeper), this);
     }
 
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
-        attachmentSystem.getAttachmentManager(Attachments.ENTITIES).detachWrapped(event.getEntity(), DetachReason.KILLED);
+        attachmentSystem.detachAll(event.getEntity(), DetachReason.KILLED);
     }
 
     @EventHandler
     public void onEntityDie(EntityRemoveFromWorldEvent event) {
-        attachmentSystem.getAttachmentManager(Attachments.ENTITIES).detachWrapped(event.getEntity(), DetachReason.REMOVED);
+        attachmentSystem.detachAll(event.getEntity(), DetachReason.REMOVED);
     }
 }

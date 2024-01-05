@@ -75,9 +75,10 @@ processResources {
 
 tasks {
     runServer {
-        // Configure the Minecraft version for our task.
-        // This is the only required configuration besides applying the plugin.
-        // Your plugin's jar (or shadowJar if present) will be used automatically.
+        downloadPlugins {
+            url('https://ci.lucko.me/job/spark/399/artifact/spark-bukkit/build/libs/spark-1.10.58-bukkit.jar')
+        }
+
         minecraftVersion("1.20.4")
     }
 }

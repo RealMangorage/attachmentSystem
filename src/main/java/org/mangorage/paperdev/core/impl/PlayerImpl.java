@@ -1,29 +1,59 @@
 package org.mangorage.paperdev.core.impl;
 
-import net.kyori.adventure.sound.Sound;
+import org.bukkit.Material;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.mangorage.paperdev.core.attachment.Attachment;
-import org.mangorage.paperdev.core.interfaces.entity.IPlayer;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.plugin.Plugin;
+import org.mangorage.paperdev.core.attachment.AttachmentSystem;
+import org.mangorage.paperdev.core.attachment.DetachReason;
 
-public class PlayerImpl extends Attachment<Player> implements IPlayer {
-    private int ticks = 0;
+import java.util.HashMap;
 
-    public PlayerImpl(Player wrappedObject) {
-        super(wrappedObject);
+import static org.mangorage.paperdev.core.Utils.reached;
+
+public class PlayerImpl extends LivingEntityAttachment<Player> implements Listener {
+
+    @FunctionalInterface
+    private interface IAction {
+        IAction EMPTY = (a, b) -> {};
+        void run(PlayerImpl instance, Object dataObject);
+    }
+
+    private static final HashMap<Material, IAction> actions = new HashMap<>();
+
+    static {
+        actions.put(Material.STICK, (p, o) -> {
+            if (o instanceof Entity entity) {
+                AttachmentSystem.getInstance().detachAll(o, DetachReason.REMOVED);
+            }
+        });
+    }
+
+
+
+    public PlayerImpl(Plugin plugin, Player wrappedObject) {
+        super(plugin, wrappedObject);
+        register(this);
     }
 
     @Override
-    public Player getBukkitPlayer() {
-        return getWrappedObject();
+    public void onRemove(DetachReason reason) {
+        unregister(this);
     }
 
     @Override
     public void tick() {
-        ticks++;
-        if (ticks % 50 == 0) {
-            getBukkitPlayer().setExperienceLevelAndProgress(0);
-            getBukkitPlayer().playSound(Sound.sound().type(org.bukkit.Sound.BLOCK_NOTE_BLOCK_COW_BELL).volume(1.0f).build());
+        if (reached(getTicks(), 10)) getWrappedObject().giveExp(3);
+    }
+
+    @EventHandler
+    public void onAttack(EntityDamageByEntityEvent event) {
+        if (equalsAttachment(event.getDamager())) {
+            var item = getWrappedObject().getInventory().getItemInMainHand().getType();
+            actions.getOrDefault(item, IAction.EMPTY).run(this, event.getEntity());
         }
-        getBukkitPlayer().giveExp(1);
     }
 }
