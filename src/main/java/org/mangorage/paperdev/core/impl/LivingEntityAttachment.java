@@ -10,6 +10,6 @@ public abstract class LivingEntityAttachment<T extends LivingEntity> extends Att
 
     @Override
     public void preTick() {
-        if (getWrappedObject() != null && getWrappedObject().isInWorld()) tick();
+        if (getObject() != null && getObject().isInWorld()) tick();
     }
 }

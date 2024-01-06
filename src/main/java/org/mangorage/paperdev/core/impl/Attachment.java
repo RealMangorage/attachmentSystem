@@ -8,16 +8,16 @@ import org.mangorage.paperdev.core.attachment.DetachReason;
 
 public abstract class Attachment<T> {
     private final Plugin plugin;
-    private final T wrappedObject;
+    private final T object;
     private int ticks;
 
-    public Attachment(Plugin plugin, T wrappedObject) {
+    public Attachment(Plugin plugin, T object) {
         this.plugin = plugin;
-        this.wrappedObject = wrappedObject;
+        this.object = object;
     }
 
-    public T getWrappedObject() {
-        return wrappedObject;
+    public T getObject() {
+        return object;
     }
 
     public int getTicks() {
@@ -32,11 +32,11 @@ public abstract class Attachment<T> {
     public abstract void preTick();
     public abstract void tick();
     public void onRemove(DetachReason reason) {
-        System.out.println("Removed Attachment [%s] [%s]".formatted(reason, getWrappedObject().getClass().getName()));
+        System.out.println("Removed Attachment [%s] [%s]".formatted(reason, getObject().getClass().getName()));
     }
 
     public final boolean equalsAttachment(Object object) {
-        return object.equals(getWrappedObject());
+        return object.equals(getObject());
     }
 
     protected final void register(Listener listener) {

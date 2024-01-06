@@ -46,13 +46,13 @@ public class PlayerImpl extends LivingEntityAttachment<Player> implements Listen
 
     @Override
     public void tick() {
-        if (reached(getTicks(), 10)) getWrappedObject().giveExp(3);
+        if (reached(getTicks(), 10)) getObject().giveExp(3);
     }
 
     @EventHandler
     public void onAttack(EntityDamageByEntityEvent event) {
         if (equalsAttachment(event.getDamager())) {
-            var item = getWrappedObject().getInventory().getItemInMainHand().getType();
+            var item = getObject().getInventory().getItemInMainHand().getType();
             actions.getOrDefault(item, IAction.EMPTY).run(this, event.getEntity());
         }
     }

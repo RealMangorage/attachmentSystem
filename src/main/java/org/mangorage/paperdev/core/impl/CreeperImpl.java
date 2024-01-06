@@ -9,19 +9,28 @@ import net.minecraft.world.level.block.state.pattern.BlockPattern;
 import net.minecraft.world.level.block.state.pattern.BlockPatternBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
+import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_20_R3.entity.CraftArmorStand;
+import org.bukkit.craftbukkit.v1_20_R3.entity.CraftCreeper;
 import org.bukkit.craftbukkit.v1_20_R3.util.CraftLocation;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Creeper;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.mangorage.paperdev.core.Utils;
 import org.mangorage.paperdev.core.attachment.DetachReason;
 
 import java.util.Random;
+import java.util.UUID;
 
 import static org.mangorage.paperdev.core.Utils.reached;
 
@@ -38,6 +47,21 @@ public class CreeperImpl extends LivingEntityAttachment<Creeper> implements List
         super(plugin, wrappedObject);
         this.name = names[random.nextInt(names.length)];
         this.stand = Utils.spawnTextAboveHead(wrappedObject.getLocation(), "Name");
+
+        NamespacedKey key = new NamespacedKey(plugin, "name-tag");
+        var data = wrappedObject.getPersistentDataContainer();
+
+        if (data.has(key)) {
+            var result = data.get(key, PersistentDataType.STRING);
+            if (result == null) return;
+            var id = UUID.fromString(result);
+            var entity = Bukkit.getServer().getEntity(id);
+            if (entity == null) return;
+            entity.remove();
+            System.out.println("Removed Stand");
+        }
+
+        data.set(key, PersistentDataType.STRING, this.stand.getUniqueId().toString());
         register(this);
     }
 
@@ -53,36 +77,36 @@ public class CreeperImpl extends LivingEntityAttachment<Creeper> implements List
             health = Math.min(health + 5, maxHealth);
         }
 
-        this.stand.teleport(getWrappedObject().getLocation().add(0, 1.5, 0));
+        this.stand.teleport(getObject().getLocation().add(0, 1.5, 0));
         if (!this.stand.isCustomNameVisible()) this.stand.setCustomNameVisible(true);
         updateName();
 
         if (health <= 0) {
-            getWrappedObject().remove();
+            getObject().remove();
         }
-        if (health <= 50 && !getWrappedObject().isPowered()) {
-            getWrappedObject().setPowered(true);
-        } else if (health > 50 && getWrappedObject().isPowered()) {
-            getWrappedObject().setPowered(false);
+        if (health <= 50 && !getObject().isPowered()) {
+            getObject().setPowered(true);
+        } else if (health > 50 && getObject().isPowered()) {
+            getObject().setPowered(false);
         }
 
-        if (reached(getTicks(), 25) && getWrappedObject().isPowered()) {
+        if (reached(getTicks(), 25) && getObject().isPowered()) {
             Bukkit.getServer().sendMessage(Component.text("I WILL KILL YOU!"));
         }
 
         if (reached(getTicks(), 20) && health < 80) {
-            var player = Utils.getNearestPlayer(getWrappedObject().getLocation());
+            var player = Utils.getNearestPlayer(getObject().getLocation());
             var damageRate = maxHealth / health;
             player.damage(2.1 * damageRate);
         }
 
-        var maxHealthAttribute = getWrappedObject().getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        var maxHealthAttribute = getObject().getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (maxHealthAttribute == null) return;
         var maxHealth = maxHealthAttribute.getValue();
-        var damage = maxHealth - getWrappedObject().getHealth();
+        var damage = maxHealth - getObject().getHealth();
         var entHealth = maxHealth <= 0 ? 0 : maxHealth;
         health -= damage;
-        getWrappedObject().setHealth(entHealth);
+        getObject().setHealth(entHealth);
     }
 
     @Override

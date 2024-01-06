@@ -1,11 +1,10 @@
 package org.mangorage.paperdev.core.attachment;
 
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.Plugin;
 import org.mangorage.paperdev.core.impl.Attachment;
-
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.WeakHashMap;
 import java.util.function.Supplier;
 
 public class AttachmentSystem {
@@ -14,45 +13,49 @@ public class AttachmentSystem {
         return INSTANCE;
     }
 
-    private final List<Attachment<?>> attachments = new CopyOnWriteArrayList<>();
+    private final WeakHashMap<Object, AttachmentHolder> attachmentData = new WeakHashMap<>();
 
     private AttachmentSystem() {
 
     }
 
     public void tick() {
-        attachments.forEach(Attachment::baseTick);
+        attachmentData.forEach((k, v) -> v.tick());
     }
 
-    public void attach(Attachment<?> attachment) {
-        attachments.add(attachment);
+    private AttachmentHolder getHolder(Object object) {
+        return attachmentData.computeIfAbsent(object, o -> new AttachmentHolder());
+    }
+
+    private AttachmentHolder findHolder(Object object) {
+        return attachmentData.get(object);
+    }
+
+    public boolean attach(NamespacedKey attachmentID, Attachment<?> attachment) {
+        var holder = getHolder(attachment.getObject());
+        return holder.attach(attachmentID, attachment);
     }
 
     /*
     Ensures this will be run on main thread... and not the event thread
      */
-    public void attach(Supplier<Attachment<?>> attachmentSupplier, Plugin plugin) {
+    public void attach(Supplier<Attachment<?>> attachmentSupplier, NamespacedKey attachmentID, Plugin plugin) {
         Bukkit.getScheduler().runTask(plugin, () -> {
-            attach(attachmentSupplier.get());
+            attach(attachmentID, attachmentSupplier.get());
         });
     }
 
-    public <T> void detachAll(T object, DetachReason reason) {
-        attachments.stream().filter(a -> a.equalsAttachment(object)).forEach(a -> {
-            a.onRemove(reason);
-            attachments.remove(a);
-        });
+    public boolean detachAll(Object object, DetachReason reason) {
+        var holder = findHolder(object);
+        if (holder == null) return false;
+        holder.detachAll(reason);
+        return true;
     }
 
-    public void detachAll(DetachReason reason) {
-        attachments.forEach(a -> {
-            a.onRemove(reason);
-            attachments.remove(a);
-        });
-    }
-
-    public void detach(Attachment<?> attachment, DetachReason reason) {
-        attachment.onRemove(reason);
-        attachments.remove(attachment);
+    public boolean detach(Object object, NamespacedKey attachmentID, DetachReason reason) {
+        var holder = findHolder(object);
+        if (holder == null) return false;
+        holder.detach(attachmentID, reason);
+        return true;
     }
 }
