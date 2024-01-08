@@ -1,6 +1,7 @@
 package org.mangorage.paperdev.core.impl;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -9,6 +10,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.plugin.Plugin;
 import org.mangorage.paperdev.core.attachment.AttachmentSystem;
 import org.mangorage.paperdev.core.attachment.DetachReason;
+import org.mangorage.paperdev.core.impl.entity.LivingEntityAttachment;
 
 import java.util.HashMap;
 
@@ -34,8 +36,8 @@ public class PlayerImpl extends LivingEntityAttachment<Player> implements Listen
 
 
 
-    public PlayerImpl(Plugin plugin, Player wrappedObject) {
-        super(plugin, wrappedObject);
+    public PlayerImpl(Plugin plugin, NamespacedKey id, Player wrappedObject) {
+        super(plugin, id, wrappedObject);
         register(this);
     }
 

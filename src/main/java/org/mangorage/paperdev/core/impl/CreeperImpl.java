@@ -3,31 +3,20 @@ package org.mangorage.paperdev.core.impl;
 import com.destroystokyo.paper.event.entity.CreeperIgniteEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.pattern.BlockPattern;
-import net.minecraft.world.level.block.state.pattern.BlockPatternBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_20_R3.entity.CraftArmorStand;
-import org.bukkit.craftbukkit.v1_20_R3.entity.CraftCreeper;
-import org.bukkit.craftbukkit.v1_20_R3.util.CraftLocation;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Creeper;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
-import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.metadata.MetadataValue;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.mangorage.paperdev.core.Utils;
 import org.mangorage.paperdev.core.attachment.DetachReason;
+import org.mangorage.paperdev.core.impl.entity.LivingEntityAttachment;
 
 import java.util.Random;
 import java.util.UUID;
@@ -40,11 +29,11 @@ public class CreeperImpl extends LivingEntityAttachment<Creeper> implements List
     private final ArmorStand stand;
 
     private final String name;
-    private final double maxHealth = 200;
+    private final double maxHealth = 10;
     private double health = maxHealth;
 
-    public CreeperImpl(Plugin plugin, Creeper wrappedObject) {
-        super(plugin, wrappedObject);
+    public CreeperImpl(Plugin plugin,NamespacedKey id, Creeper wrappedObject) {
+        super(plugin, id, wrappedObject);
         this.name = names[random.nextInt(names.length)];
         this.stand = Utils.spawnTextAboveHead(wrappedObject.getLocation(), "Name");
 
@@ -54,14 +43,15 @@ public class CreeperImpl extends LivingEntityAttachment<Creeper> implements List
         if (data.has(key)) {
             var result = data.get(key, PersistentDataType.STRING);
             if (result == null) return;
-            var id = UUID.fromString(result);
-            var entity = Bukkit.getServer().getEntity(id);
+            var eid = UUID.fromString(result);
+            var entity = Bukkit.getServer().getEntity(eid);
             if (entity == null) return;
             entity.remove();
             System.out.println("Removed Stand");
         }
 
         data.set(key, PersistentDataType.STRING, this.stand.getUniqueId().toString());
+
         register(this);
     }
 
@@ -97,7 +87,7 @@ public class CreeperImpl extends LivingEntityAttachment<Creeper> implements List
         if (reached(getTicks(), 20) && health < 80) {
             var player = Utils.getNearestPlayer(getObject().getLocation());
             var damageRate = maxHealth / health;
-            player.damage(2.1 * damageRate);
+            if (player != null) player.damage(2.1 * damageRate);
         }
 
         var maxHealthAttribute = getObject().getAttribute(Attribute.GENERIC_MAX_HEALTH);
@@ -111,6 +101,7 @@ public class CreeperImpl extends LivingEntityAttachment<Creeper> implements List
 
     @Override
     public void onRemove(DetachReason reason) {
+        super.onRemove(reason);
         this.stand.remove();
         unregister(this);
     }

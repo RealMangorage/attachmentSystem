@@ -1,23 +1,30 @@
 package org.mangorage.paperdev.core.impl;
 
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataHolder;
 import org.bukkit.plugin.Plugin;
+import org.mangorage.paperdev.core.attachment.AttachmentSystem;
 import org.mangorage.paperdev.core.attachment.DetachReason;
+import java.lang.ref.WeakReference;
 
 public abstract class Attachment<T> {
     private final Plugin plugin;
-    private final T object;
+    private final NamespacedKey id;
+    private final WeakReference<T> object;
     private int ticks;
 
-    public Attachment(Plugin plugin, T object) {
+    public Attachment(Plugin plugin, NamespacedKey id, T object) {
         this.plugin = plugin;
-        this.object = object;
+        this.id = id;
+        this.object = new WeakReference<>(object, null);
     }
 
     public T getObject() {
-        return object;
+        return object.get();
     }
 
     public int getTicks() {
@@ -25,12 +32,23 @@ public abstract class Attachment<T> {
     }
 
     public void baseTick() {
-        ticks++;
-        preTick();
+        if (isValid()) {
+            ticks++;
+            tick();
+        } else {
+            AttachmentSystem.getInstance().detach(getObject(), getID(), DetachReason.DISCARDED);
+        }
     }
 
-    public abstract void preTick();
+    public void save() {}
+    public void load() {}
+    public abstract boolean isValid();
     public abstract void tick();
+
+    public void invalidate() {
+        onRemove(DetachReason.REMOVED);
+    }
+
     public void onRemove(DetachReason reason) {
         System.out.println("Removed Attachment [%s] [%s]".formatted(reason, getObject().getClass().getName()));
     }
@@ -45,5 +63,9 @@ public abstract class Attachment<T> {
 
     protected final void unregister(Listener listener) {
         HandlerList.unregisterAll(listener);
+    }
+
+    public NamespacedKey getID() {
+        return id;
     }
 }

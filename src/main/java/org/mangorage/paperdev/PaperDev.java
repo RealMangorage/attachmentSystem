@@ -5,6 +5,7 @@ import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Creeper;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -13,7 +14,9 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mangorage.paperdev.core.attachment.AttachmentSystem;
 import org.mangorage.paperdev.core.attachment.DetachReason;
+import org.mangorage.paperdev.core.attachment.RegistryObject;
 import org.mangorage.paperdev.core.impl.CreeperImpl;
+import org.mangorage.paperdev.core.impl.PlayerImpl;
 
 import java.util.TimerTask;
 
@@ -28,10 +31,13 @@ public final class PaperDev extends JavaPlugin implements Listener {
         };
     }
 
-    private final AttachmentSystem attachmentSystem = AttachmentSystem.getInstance();
+    private final AttachmentSystem attachmentSystem = AttachmentSystem.register(this);
+    public RegistryObject<Creeper> creeperRO = attachmentSystem.createRegistry(Creeper.class, this, "test", CreeperImpl::new);
+    public RegistryObject<Player> playerRO = attachmentSystem.createRegistry(Player.class, this, "test2", PlayerImpl::new);
 
     @Override
     public void onEnable() {
+        attachmentSystem.init();
         Bukkit.getPluginManager().registerEvents(this, this);
         Bukkit.getScheduler().runTaskTimer(this, attachmentSystem::tick, 0, 1);
 
@@ -55,7 +61,9 @@ public final class PaperDev extends JavaPlugin implements Listener {
     @EventHandler
     public void onEntityJoin(EntityAddToWorldEvent event) {
         if (event.getEntity() instanceof Creeper creeper) {
-            attachmentSystem.attach(() -> new CreeperImpl(this, creeper), new NamespacedKey(this, "creeperMain"), this);
+            creeperRO.create(creeper);
+        } else if (event.getEntity() instanceof Player player) {
+            playerRO.create(player);
         }
     }
 
