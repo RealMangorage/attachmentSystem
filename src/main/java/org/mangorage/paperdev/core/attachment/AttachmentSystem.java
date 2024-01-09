@@ -12,35 +12,73 @@ import org.bukkit.plugin.Plugin;
 import org.mangorage.paperdev.core.impl.Attachment;
 import org.mangorage.paperdev.core.misc.NamespacedKeyHashsetDataType;
 
+import java.lang.ref.Reference;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static org.bukkit.Bukkit.getServer;
 
 public final class AttachmentSystem {
-    private static AttachmentSystem INSTANCE;
+    private static final NamespacedKey TAG = new NamespacedKey("attachmentapi", "attachments");
+    private static final HashMap<Plugin, AttachmentSystem> ATTACHMENTS = new HashMap<>();
 
-    public static AttachmentSystem register(Plugin plugin) {
-        if (INSTANCE == null) INSTANCE = new AttachmentSystem(plugin);
-        return INSTANCE;
+    public static AttachmentSystem create(Supplier<Plugin> plugin) {
+        return ATTACHMENTS.computeIfAbsent(plugin.get(), p -> new AttachmentSystem(plugin));
     }
-    public static AttachmentSystem getInstance() {
-        return INSTANCE;
+
+    public static List<String> getAttachmentIDs(boolean spawnableOnly) {
+        List<String> attachments = new ArrayList<>();
+        ATTACHMENTS.forEach((k, v) -> {
+            v.registryObjects.forEach((k2, v2) -> {
+                if (spawnableOnly && v2.canSpawn()) attachments.add(v2.getID().toString());
+                if (!spawnableOnly) attachments.add(v2.getID().toString());
+            });
+        });
+        return attachments;
+    }
+
+    protected static RegistryObject findAttachment(String id) {
+        AtomicReference<RegistryObject> reference = new AtomicReference<>();
+        ATTACHMENTS.forEach((k, v) -> {
+            v.registryObjects.forEach((k2, v2) -> {
+                if (v2.getID().toString().equals(id)) {
+                    reference.set(v2);
+                    return;
+                };
+            });
+        });
+        return reference.get();
+    }
+
+    public static void detachStatic(Object object, NamespacedKey attachmentID, DetachReason reason) {
+        for (AttachmentSystem value : ATTACHMENTS.values()) {
+            if (value.detach(object, attachmentID, reason)) break;
+        }
+    }
+
+    public static void detachAllStatic(Object object, DetachReason reason) {
+        for (AttachmentSystem value : ATTACHMENTS.values()) {
+            if (value.detachAll(object, reason)) break;
+        }
+    }
+
+    public static NamespacedKey getAttachmentsTag() {
+        return TAG;
     }
 
     private final Map<Object, AttachmentHolder> attachmentData = new WeakHashMap<>();
-    private final Map<NamespacedKey, RegistryObject<?>> registryObjects = new HashMap<>();
+    private final Map<NamespacedKey, RegistryObject<?, ?>> registryObjects = new HashMap<>();
 
     private final Plugin plugin;
-    private final NamespacedKey attachmentsTag;
 
     private boolean loaded;
-    private AttachmentSystem(Plugin plugin) {
-        this.plugin = plugin;
-        this.attachmentsTag = new NamespacedKey(plugin, "attachments");
+    private AttachmentSystem(Supplier<Plugin> plugin) {
+        this.plugin = plugin.get();
     }
 
     public void init() {
@@ -60,10 +98,7 @@ public final class AttachmentSystem {
                 if (event.getType() == ServerLoadEvent.LoadType.RELOAD) load(false);
             }
         }, plugin);
-    }
-
-    public NamespacedKey getAttachmentsTag() {
-        return attachmentsTag;
+        Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0, 1);
     }
 
     private void save() {
@@ -92,10 +127,14 @@ public final class AttachmentSystem {
         });
     }
 
-    public <T> RegistryObject<T> createRegistry(Class<T> type, Plugin plugin, String id, IAttachmentSupplier<T> supplier) {
-        var ro = new RegistryObject<>(type, plugin, id, supplier);
+    public <T, P> RegistryObject<T, P> createRegistry(Class<T> type, String id, IAttachmentSupplier<T, P> supplier, IAttachmentSupplier.ISpawner<T> spawner) {
+        var ro = new RegistryObject<>(this, type, plugin, id, supplier, spawner);
         registryObjects.put(new NamespacedKey(plugin, id), ro);
         return ro;
+    }
+
+    public <T, P> RegistryObject<T, P> createRegistry(Class<T> type, String id, IAttachmentSupplier<T, P> supplier) {
+        return createRegistry(type, id, supplier, null);
     }
 
     public void tick() {

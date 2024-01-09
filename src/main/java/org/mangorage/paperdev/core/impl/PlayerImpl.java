@@ -8,6 +8,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.plugin.Plugin;
+import org.mangorage.paperdev.core.Registers;
 import org.mangorage.paperdev.core.attachment.AttachmentSystem;
 import org.mangorage.paperdev.core.attachment.DetachReason;
 import org.mangorage.paperdev.core.impl.entity.LivingEntityAttachment;
@@ -29,7 +30,8 @@ public class PlayerImpl extends LivingEntityAttachment<Player> implements Listen
     static {
         actions.put(Material.STICK, (p, o) -> {
             if (o instanceof Entity entity) {
-                AttachmentSystem.getInstance().detachAll(o, DetachReason.REMOVED);
+                //AttachmentSystem.detachAllStatic(o, DetachReason.REMOVED);
+                Registers.creeperRO.spawn(entity.getLocation());
             }
         });
     }

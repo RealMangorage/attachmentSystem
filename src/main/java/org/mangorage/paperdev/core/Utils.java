@@ -4,8 +4,10 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 
 public class Utils {
     public static ArmorStand spawnTextAboveHead(Location location, String text) {
@@ -18,6 +20,11 @@ public class Utils {
         return armorStand;
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T extends Entity> T spawnEntity(Location location, Class<T> entityClass) {
+        return (T) location.getWorld().createEntity(location, entityClass);
+    }
+
     public static void runOnMain(Runnable runnable) {
         var pl = Bukkit.getPluginManager().getPlugin("paperDev");
         if (pl == null) return;
@@ -28,7 +35,7 @@ public class Utils {
         return amount % required == 0;
     }
 
-    public static Player getNearestPlayer(Location location) {
+    public static Player getNearestPlayer(Location location, int distance) {
         Player nearestPlayer = null;
         double nearestDistanceSquared = Double.MAX_VALUE;
 
@@ -36,7 +43,7 @@ public class Utils {
             Location playerLocation = player.getLocation();
             double distanceSquared = location.distanceSquared(playerLocation);
 
-            if (distanceSquared < nearestDistanceSquared) {
+            if (distanceSquared < nearestDistanceSquared && distanceSquared <= distance) {
                 nearestPlayer = player;
                 nearestDistanceSquared = distanceSquared;
             }

@@ -30,6 +30,7 @@ public class NamespacedKeyHashsetDataType implements PersistentDataType<String, 
         StringBuilder stringBuilder = new StringBuilder();
 
         for (NamespacedKey key : complex) {
+            if (key == null) continue;
             stringBuilder.append(key.toString()).append(",");
         }
 

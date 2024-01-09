@@ -1,5 +1,6 @@
 package org.mangorage.paperdev.core.impl;
 
+import com.destroystokyo.paper.entity.ai.PaperVanillaGoal;
 import com.destroystokyo.paper.event.entity.CreeperIgniteEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
@@ -52,6 +53,8 @@ public class CreeperImpl extends LivingEntityAttachment<Creeper> implements List
 
         data.set(key, PersistentDataType.STRING, this.stand.getUniqueId().toString());
 
+        Bukkit.getServer().getMobGoals().removeGoal(getObject(), PaperVanillaGoal.SWELL);
+
         register(this);
     }
 
@@ -80,14 +83,9 @@ public class CreeperImpl extends LivingEntityAttachment<Creeper> implements List
             getObject().setPowered(false);
         }
 
-        if (reached(getTicks(), 25) && getObject().isPowered()) {
-            Bukkit.getServer().sendMessage(Component.text("I WILL KILL YOU!"));
-        }
-
-        if (reached(getTicks(), 20) && health < 80) {
-            var player = Utils.getNearestPlayer(getObject().getLocation());
-            var damageRate = maxHealth / health;
-            if (player != null) player.damage(2.1 * damageRate);
+        if (reached(getTicks(), 10)) {
+            var player = Utils.getNearestPlayer(getObject().getLocation(), 8);
+            if (player != null) getObject().setTarget(player);
         }
 
         var maxHealthAttribute = getObject().getAttribute(Attribute.GENERIC_MAX_HEALTH);

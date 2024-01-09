@@ -26,11 +26,11 @@ public abstract class EntityAttachment<T extends Entity> extends Attachment<T> {
         var ob = getObject();
         if (ob != null) {
             var data = ob.getPersistentDataContainer();
-            if (data.has(AttachmentSystem.getInstance().getAttachmentsTag())) {
-                var attachments = data.get(AttachmentSystem.getInstance().getAttachmentsTag(), NamespacedKeyHashsetDataType.TYPE);
+            if (data.has(AttachmentSystem.getAttachmentsTag())) {
+                var attachments = data.get(AttachmentSystem.getAttachmentsTag(), NamespacedKeyHashsetDataType.TYPE);
                 if (attachments != null) {
                     attachments.remove(getID());
-                    data.set(AttachmentSystem.getInstance().getAttachmentsTag(), NamespacedKeyHashsetDataType.TYPE, attachments);
+                    data.set(AttachmentSystem.getAttachmentsTag(), NamespacedKeyHashsetDataType.TYPE, attachments);
                 }
             }
         }
@@ -43,13 +43,13 @@ public abstract class EntityAttachment<T extends Entity> extends Attachment<T> {
         // Handle saving attachment data!
         if (o != null) {
             var data = o.getPersistentDataContainer();
-            if (data.has(AttachmentSystem.getInstance().getAttachmentsTag())) {
-                var list = data.get(AttachmentSystem.getInstance().getAttachmentsTag(), NamespacedKeyHashsetDataType.TYPE);
+            if (data.has(AttachmentSystem.getAttachmentsTag())) {
+                var list = data.get(AttachmentSystem.getAttachmentsTag(), NamespacedKeyHashsetDataType.TYPE);
                 if (list != null) list.add(getID());
             } else {
                 HashSet<NamespacedKey> list = new HashSet<>();
                 list.add(getID());
-                data.set(AttachmentSystem.getInstance().getAttachmentsTag(), NamespacedKeyHashsetDataType.TYPE, list);
+                data.set(AttachmentSystem.getAttachmentsTag(), NamespacedKeyHashsetDataType.TYPE, list);
             }
         }
     }

@@ -4,12 +4,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataHolder;
 import org.bukkit.plugin.Plugin;
 import org.mangorage.paperdev.core.attachment.AttachmentSystem;
 import org.mangorage.paperdev.core.attachment.DetachReason;
 import java.lang.ref.WeakReference;
+
+import static org.mangorage.paperdev.core.Utils.reached;
 
 public abstract class Attachment<T> {
     private final Plugin plugin;
@@ -32,11 +32,11 @@ public abstract class Attachment<T> {
     }
 
     public void baseTick() {
+        ticks++;
         if (isValid()) {
-            ticks++;
             tick();
         } else {
-            AttachmentSystem.getInstance().detach(getObject(), getID(), DetachReason.DISCARDED);
+            AttachmentSystem.detachStatic(getObject(), getID(), DetachReason.DISCARDED);
         }
     }
 

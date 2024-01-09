@@ -14,7 +14,9 @@ public final class AttachmentHolder {
     private final Map<NamespacedKey, Attachment<?>> attachments = new ConcurrentHashMap<>();
 
     boolean attach(NamespacedKey attachmentID, Attachment<?> attachment) {
-        return attachments.putIfAbsent(attachmentID, attachment) == null; // true if it was successful at attaching it, false if it already exists
+        if (attachments.containsKey(attachmentID)) return false;
+        attachments.put(attachmentID, attachment);
+        return true;
     }
     void tick() {
         attachments.forEach((k, v) -> {
