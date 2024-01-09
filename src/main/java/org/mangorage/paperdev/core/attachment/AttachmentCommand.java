@@ -93,6 +93,12 @@ public class AttachmentCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> completions = new ArrayList<>();
         if (sender instanceof Player player) {
+            Entity entity = null;
+            if (args.length > 1) {
+                entity = player.getTargetEntity(2);
+            }
+
+
             if (args.length == 1) {
                 completions.add("attach");
                 completions.add("detach");
@@ -101,9 +107,8 @@ public class AttachmentCommand implements CommandExecutor, TabCompleter {
             } else if (args.length == 2) {
                 switch (args[0].toLowerCase()) {
                     case "attach", "detach", "detachall":
-                        for (Entity entity : player.getWorld().getEntities()) {
+                        if (entity != null)
                             completions.add(entity.getUniqueId().toString());
-                        }
                         break;
                     case "spawn":
                         completions.addAll(AttachmentSystem.getAttachmentIDs(true));
