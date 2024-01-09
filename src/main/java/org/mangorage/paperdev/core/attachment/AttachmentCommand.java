@@ -1,6 +1,10 @@
 package org.mangorage.paperdev.core.attachment;
 
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.Style;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
@@ -26,6 +30,11 @@ public class AttachmentCommand implements CommandExecutor, TabCompleter {
         }
 
         Player player = (Player) sender;
+
+        if (!player.hasPermission("paperDev.command.attachment.use")) {
+            player.sendMessage(Component.text("Lacking paperDev.command.attachment.use permission").color(NamedTextColor.RED));
+            return true;
+        }
 
         if (args.length == 0) {
             // Display subcommands
@@ -126,6 +135,8 @@ public class AttachmentCommand implements CommandExecutor, TabCompleter {
         return completions;
     }
 
+
+    @SuppressWarnings("unchecked")
     private void attachAttachment(Player player, String entityUUID, String attachmentID) {
         var uuid = getSafeUUID(entityUUID);
         if (uuid != null) {
@@ -136,7 +147,11 @@ public class AttachmentCommand implements CommandExecutor, TabCompleter {
                     if (ro.getClassType().isAssignableFrom(entity.getClass())) {
                         ro.createCast(entity);
                         player.sendMessage(ChatColor.GREEN + "Attached attachment with ID " + attachmentID + " to entity with UUID " + entityUUID);
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Unable to attach attachment %s to entity, does not support Entity Type %s, only supports %s".formatted(attachmentID, entity.getClass().getSimpleName(), ro.getClassType().getSimpleName()));
                     }
+                } else {
+                    player.sendMessage(ChatColor.RED + "Attachment %s does not exist".formatted(attachmentID));
                 }
             } else {
                 player.sendMessage(ChatColor.RED + "Entity with UUID of %s does not exist!".formatted(entityUUID));

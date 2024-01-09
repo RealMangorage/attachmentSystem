@@ -46,4 +46,9 @@ public final class AttachmentHolder {
         });
         runnables.forEach(Runnable::run);
     }
+
+    public void invalidate() {
+        attachments.forEach((k, v) -> v.invalidate());
+        attachments.clear();
+    }
 }

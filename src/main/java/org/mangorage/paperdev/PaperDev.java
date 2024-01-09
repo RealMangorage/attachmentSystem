@@ -7,6 +7,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mangorage.paperdev.core.Registers;
 import org.mangorage.paperdev.core.Utils;
@@ -18,8 +19,7 @@ import org.mangorage.paperdev.core.impl.PlayerImpl;
 
 import java.util.TimerTask;
 
-import static org.mangorage.paperdev.core.Registers.creeperRO;
-import static org.mangorage.paperdev.core.Registers.playerRO;
+import static org.mangorage.paperdev.core.Registers.*;
 
 public final class PaperDev extends JavaPlugin implements Listener {
 
@@ -55,5 +55,10 @@ public final class PaperDev extends JavaPlugin implements Listener {
         } else if (event.getEntity() instanceof Player player) {
             playerRO.create(player);
         }
+    }
+
+    @EventHandler
+    public void onBlockPlaced(BlockPlaceEvent event) {
+        blockRO.create(event.getBlock());
     }
 }

@@ -15,16 +15,23 @@ public abstract class Attachment<T> {
     private final Plugin plugin;
     private final NamespacedKey id;
     private final WeakReference<T> object;
+    private final Class<?> wrappedObjectClass;
     private int ticks;
+    private boolean removed = false;
 
     public Attachment(Plugin plugin, NamespacedKey id, T object) {
         this.plugin = plugin;
         this.id = id;
         this.object = new WeakReference<>(object, null);
+        this.wrappedObjectClass = object.getClass();
     }
 
     public T getObject() {
         return object.get();
+    }
+
+    public Class<?> getObjectClass() {
+        return wrappedObjectClass;
     }
 
     public int getTicks() {
@@ -35,22 +42,26 @@ public abstract class Attachment<T> {
         ticks++;
         if (isValid()) {
             tick();
-        } else {
-            AttachmentSystem.detachStatic(getObject(), getID(), DetachReason.DISCARDED);
+        } else if (!isRemoved()) {
+            onRemove(DetachReason.KILLED);
         }
     }
 
     public void save() {}
     public void load() {}
+    public boolean isRemoved() {
+        return removed;
+    }
     public abstract boolean isValid();
     public abstract void tick();
 
     public void invalidate() {
-        onRemove(DetachReason.REMOVED);
+        onRemove(DetachReason.INVALIDATION);
     }
 
     public void onRemove(DetachReason reason) {
-        System.out.println("Removed Attachment [%s] [%s]".formatted(reason, getObject().getClass().getName()));
+        System.out.println("Removed Attachment [%s] [%s]".formatted(reason, wrappedObjectClass.getName()));
+        this.removed = true;
     }
 
     public final boolean equalsAttachment(Object object) {

@@ -1,5 +1,6 @@
 package org.mangorage.paperdev.core.attachment;
 
+import net.minecraft.world.phys.AABB;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
@@ -11,6 +12,7 @@ import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.plugin.Plugin;
 import org.mangorage.paperdev.core.impl.Attachment;
 import org.mangorage.paperdev.core.misc.NamespacedKeyHashsetDataType;
+import org.mangorage.paperdev.core.misc.ObjectHolder;
 
 import java.lang.ref.Reference;
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -42,7 +45,8 @@ public final class AttachmentSystem {
         return attachments;
     }
 
-    protected static RegistryObject findAttachment(String id) {
+    @SuppressWarnings("all")
+    static RegistryObject findAttachment(String id) {
         AtomicReference<RegistryObject> reference = new AtomicReference<>();
         ATTACHMENTS.forEach((k, v) -> {
             v.registryObjects.forEach((k2, v2) -> {
@@ -71,12 +75,11 @@ public final class AttachmentSystem {
         return TAG;
     }
 
-    private final Map<Object, AttachmentHolder> attachmentData = new WeakHashMap<>();
+    private final Map<ObjectHolder, AttachmentHolder> attachmentData = new WeakHashMap<>();
     private final Map<NamespacedKey, RegistryObject<?, ?>> registryObjects = new HashMap<>();
 
     private final Plugin plugin;
 
-    private boolean loaded;
     private AttachmentSystem(Supplier<Plugin> plugin) {
         this.plugin = plugin.get();
     }
@@ -138,15 +141,32 @@ public final class AttachmentSystem {
     }
 
     public void tick() {
-        attachmentData.forEach((k, v) -> v.tick());
+        List<Runnable> afterTask = new ArrayList<>();
+        attachmentData.forEach((k, v) -> checkAndTick(k, v, afterTask));
+        afterTask.forEach(Runnable::run);
+    }
+
+    private void checkAndTick(ObjectHolder holder, AttachmentHolder attachment, List<Runnable> afterTask) {
+        if (holder.isValid()) {
+            attachment.tick();
+        } else {
+            afterTask.add(() -> {
+                holder.invalidate();
+                attachment.invalidate();
+            });
+        }
     }
 
     private AttachmentHolder getHolder(Object object) {
-        return attachmentData.computeIfAbsent(object, o -> new AttachmentHolder());
+        return attachmentData.computeIfAbsent(ObjectHolder.create(object, this::remove), a -> new AttachmentHolder());
+    }
+
+    private void remove(ObjectHolder holder) {
+
     }
 
     private AttachmentHolder findHolder(Object object) {
-        return attachmentData.get(object);
+        return attachmentData.get(ObjectHolder.of(object));
     }
 
     private boolean attach(Attachment<?> attachment) {

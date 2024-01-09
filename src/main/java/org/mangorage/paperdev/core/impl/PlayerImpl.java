@@ -30,8 +30,8 @@ public class PlayerImpl extends LivingEntityAttachment<Player> implements Listen
     static {
         actions.put(Material.STICK, (p, o) -> {
             if (o instanceof Entity entity) {
-                //AttachmentSystem.detachAllStatic(o, DetachReason.REMOVED);
-                Registers.creeperRO.spawn(entity.getLocation());
+                AttachmentSystem.detachAllStatic(o, DetachReason.REMOVED);
+                //Registers.creeperRO.spawn(entity.getLocation());
             }
         });
     }
