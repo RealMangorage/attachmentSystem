@@ -3,6 +3,7 @@ package org.mangorage.paperdev.core.attachment;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -12,6 +13,8 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.mangorage.paperdev.core.Utils.getSafeUUID;
 
 public class AttachmentCommand implements CommandExecutor, TabCompleter {
 
@@ -51,15 +54,22 @@ public class AttachmentCommand implements CommandExecutor, TabCompleter {
                 if (args.length == 1) {
                     // Display parameters for detach subcommand
                     player.sendMessage(ChatColor.GREEN + "Usage: " + ChatColor.WHITE + "/attachment detach entityUUID [attachmentID]");
-                } else if (args.length == 2) {
-                    detachAllAttachments(player, args[1]);
                 } else if (args.length == 3) {
                     detachAttachment(player, args[1], args[2]);
                 } else {
                     player.sendMessage(ChatColor.RED + "Usage: " + ChatColor.WHITE + "/attachment detach entityUUID [attachmentID]");
                 }
                 break;
-
+            case "detachall":
+                if (args.length == 1) {
+                    // Display parameters for detach subcommand
+                    player.sendMessage(ChatColor.GREEN + "Usage: " + ChatColor.WHITE + "/attachment detachAll entityUUID");
+                } else if (args.length == 2) {
+                    detachAllAttachments(player, args[1]);
+                } else {
+                    player.sendMessage(ChatColor.RED + "Usage: " + ChatColor.WHITE + "/attachment detachAll entityUUID");
+                }
+                break;
             case "spawn":
                 if (args.length == 1) {
                     // Display parameters for spawn subcommand
@@ -87,14 +97,10 @@ public class AttachmentCommand implements CommandExecutor, TabCompleter {
                 completions.add("attach");
                 completions.add("detach");
                 completions.add("spawn");
+                completions.add("detachAll");
             } else if (args.length == 2) {
-                // Add logic for entityUUID tab completion
-                // Example: completions.addAll(getEntityUUIDs(args[1]));
-                if (args[0].equals("attach")) {
-                    completions.add(args[0]);
-                }
-                switch (args[0]) {
-                    case "attach", "detach":
+                switch (args[0].toLowerCase()) {
+                    case "attach", "detach", "detachall":
                         for (Entity entity : player.getWorld().getEntities()) {
                             completions.add(entity.getUniqueId().toString());
                         }
@@ -104,8 +110,11 @@ public class AttachmentCommand implements CommandExecutor, TabCompleter {
                         break;
                 }
             } else if (args.length == 3) {
-                // Add logic for attachmentID tab completion
-                // Example: completions.addAll(getAttachmentIDs(args[2]));
+                switch (args[0].toLowerCase()) {
+                    case "attach", "detach":
+                        completions.addAll(AttachmentSystem.getAttachmentIDs(false));
+                        break;
+                }
             }
         }
 
@@ -113,24 +122,69 @@ public class AttachmentCommand implements CommandExecutor, TabCompleter {
     }
 
     private void attachAttachment(Player player, String entityUUID, String attachmentID) {
-        // Custom logic for attaching attachment to entity
-        player.sendMessage(ChatColor.GREEN + "Attached attachment with ID " + attachmentID + " to entity with UUID " + entityUUID);
+        var uuid = getSafeUUID(entityUUID);
+        if (uuid != null) {
+            var entity = Bukkit.getEntity(uuid);
+            if (entity != null) {
+                var ro = AttachmentSystem.findAttachment(attachmentID);
+                if (ro != null) {
+                    if (ro.getClassType().isAssignableFrom(entity.getClass())) {
+                        ro.createCast(entity);
+                        player.sendMessage(ChatColor.GREEN + "Attached attachment with ID " + attachmentID + " to entity with UUID " + entityUUID);
+                    }
+                }
+            } else {
+                player.sendMessage(ChatColor.RED + "Entity with UUID of %s does not exist!".formatted(entityUUID));
+            }
+        } else {
+            player.sendMessage(ChatColor.RED + "Invalid UUID " + entityUUID);
+        }
     }
 
     private void detachAttachment(Player player, String entityUUID, String attachmentID) {
         // Custom logic for detaching attachment from entity
-        player.sendMessage(ChatColor.GREEN + "Detached attachment" + (attachmentID != null ? " with ID " + attachmentID : "") + " from entity with UUID " + entityUUID);
+        var uuid = getSafeUUID(entityUUID);
+        if (uuid != null) {
+            var entity = Bukkit.getEntity(uuid);
+            if (entity != null) {
+                AttachmentSystem.detachStatic(entity, NamespacedKey.fromString(attachmentID), DetachReason.REMOVED);
+                player.sendMessage(ChatColor.GREEN + "Detached attachment" + (attachmentID != null ? " with ID " + attachmentID : "") + " from entity with UUID " + entityUUID);
+            } else {
+                player.sendMessage(ChatColor.RED + "Entity with UUID of %s does not exist!".formatted(entityUUID));
+            }
+        } else {
+            player.sendMessage(ChatColor.RED + "Invalid UUID " + entityUUID);
+        }
     }
 
     private void detachAllAttachments(Player player, String entityUUID) {
         // Custom logic for detaching all attachments from entity
-        player.sendMessage(ChatColor.GREEN + "Detached all attachments from entity with UUID " + entityUUID);
+        var uuid = getSafeUUID(entityUUID);
+        if (uuid != null) {
+            var entity = Bukkit.getEntity(uuid);
+            if (entity != null) {
+                AttachmentSystem.detachAllStatic(entity, DetachReason.REMOVED);
+                player.sendMessage(ChatColor.GREEN + "Detached all attachments from entity with UUID " + entityUUID);
+            } else {
+                player.sendMessage(ChatColor.RED + "Entity with UUID of %s does not exist!".formatted(entityUUID));
+            }
+        } else {
+            player.sendMessage(ChatColor.RED + "Invalid UUID " + entityUUID);
+        }
     }
 
     private void spawnAttachment(Player player, String attachmentID) {
         // Custom logic for spawning attachment
-        player.sendMessage(ChatColor.GREEN + "Spawned attachment with ID " + attachmentID);
         var registry = AttachmentSystem.findAttachment(attachmentID);
-        if (registry != null) registry.spawn(player.getLocation());
+        if (registry != null) {
+            if (registry.canSpawn()) {
+                registry.spawn(player.getLocation());
+                player.sendMessage(ChatColor.GREEN + "Spawned attachment with ID " + attachmentID);
+            } else {
+                player.sendMessage(ChatColor.RED + "Unable to spawn attachment, not possible to spawn attachment ID " + attachmentID);
+            }
+        } else {
+            player.sendMessage(ChatColor.RED + "Unable to spawn attachment with ID doesn't exist " + attachmentID);
+        }
     }
 }

@@ -3,11 +3,14 @@ package org.mangorage.paperdev.core;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+
+import java.util.UUID;
 
 public class Utils {
     public static ArmorStand spawnTextAboveHead(Location location, String text) {
@@ -29,6 +32,14 @@ public class Utils {
         var pl = Bukkit.getPluginManager().getPlugin("paperDev");
         if (pl == null) return;
         Bukkit.getScheduler().runTask(pl, runnable);
+    }
+
+    public static UUID getSafeUUID(String input) {
+        try {
+            return UUID.fromString(input);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public static boolean reached(int amount, int required) {
